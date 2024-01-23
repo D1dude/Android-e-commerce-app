@@ -1,0 +1,59 @@
+I have implemented three DAOs - CartItemDao, OrderDao, and ProductDao - which handle operations related to local data storage. These DAOs communicate with their respective database tables.
+
+The entities - CartItemEntity, OrderEntity, and ProductEntity - define the structure and specify the type of data stored in the tables.
+
+Additionally, I've created an AppContainer. This Dependency Injection container is responsible for creating instances of ViewModels, repositories, Room Database, and the Retrofit API service.
+
+The AppDatabase is an abstract class that provides access to DAOs by implementing the Singleton pattern. It also contains a function that communicates with both ApiService and RetrofitBuilder. ApiService manages network calls for product data, while RetrofitBuilder is responsible for setting up a Retrofit instance based on BASE_URL. This approach efficiently handles communication with the external API.
+
+OrderRepository, ProductRepository, and ShoppingCartRepository provide access to the DAOs, managing data retrieval from both the API and the database. They include functions for retrieval, updating, and storage of data, abstracting the access to the database and API.
+
+In ProductRepository, I use the getProducts function to fetch products from the API, and then they are stored in the database through productDao.insertProducts. Both functions are asynchronous, enabling the handling of network and database operations without blocking the main thread.
+
+ShoppingCartRepository includes various functions handling shopping cart operations. For instance, updateCartItem updates an existing item in the cart, insertCartItem adds a new product, and removeCartItem removes an item. The createOrder function creates a new order based on the items in the cart and stores these orders in the order database.
+
+ViewModel
+
+In ProductViewModel, the functions getProducts() and getAllProducts() are designed to smoothly utilize coroutines for fetching products from the database. The addToCart(product) function allows users to add products to the shopping cart by calling the same function in ShoppingCartViewModel.
+
+ProductList displays an overview of products and uses LaunchedEffect to initiate the retrieval of all products with getAllProducts(). LazyColumn is employed to create a scrollable view of ProductListItem.
+
+ProductListItem presents the details for each product.
+
+ProductScreen displays detailed information about a specific product. The button added triggers addToCart() in ShoppingCartViewModel. All images are displayed using the CoilImage library.
+
+Each interface connects to ProductViewModel to retrieve product data. Additionally, ProductScreen also utilizes ShoppingCartViewModel to add products to the shopping cart.
+
+ShoppingCartViewModel manages shopping cart and ordering functionality in the app. It includes LiveData observations for cartItem, cartItems, and totalPrice. The init block is triggered by fetching all cart items via shoppingCartRepository, ensuring smooth LiveData updates with changes in the shopping cart.
+
+addToCart(product) adds a product to the shopping cart, adjusting the quantity if the product already exists or adding a new one if it doesn't.
+
+removeCartItem(cartItem), increaseCartItemQuantity(cartItem), and decreaseCartItemQuantity(cartItem) manage the removal, increase, and decrease of quantities for existing products in the shopping cart.
+
+ShoppingCartScreen uses ShoppingCartViewModel to display shopping cart contents. It also allows users to adjust product quantities and remove items directly from the shopping cart. Upon purchase, createOrder(cartItems) is triggered to complete the order, update the interface, and empty the shopping cart.
+
+This is an area where I spent a significant amount of time, especially when I was stuck on resolving the issue of automatic UI updates. It's worth noting that I haven't completely resolved the problem where quantity adjustments don't work after deleting a product from the shopping cart. The update occurs in the database, but not in the interface; users need to refresh the app by clicking on the shopping cart for quantity adjustments to work again after removing a product.
+
+calculateTotalPrice(cartItems) calculates the total price for all products in the shopping cart, and the update is reflected in the interface.
+
+createOrder uses shoppingCartRepository to generate an order from the shopping cart. After completing the order, the shopping cart is emptied. A new cartId is created for the new order by finding the highest cartId in the order database and adding 1. This ensures a unique identification for each order, and LiveData is updated.
+
+In OrderViewModel, order functionality and data in the app are controlled through two LiveData objects: _orderItems and _filteredOrderItems. These provide an overview of all orders and the filtered orders, where filtering is based on cartId, displaying orders related to a specific shopping cart. LiveData is observed to combine and present a clear overview of orders.
+
+I observe orderItems and filteredOrderItems, combining them to provide a comprehensive list of orders. I use LazyColumn to organize orders, grouped by cartId. For each group, a box is displayed that users can open or close. The state, isBoxToggled, keeps track of which boxes are open or closed.
+
+This implementation offers a neat and organized display of orders, organized by cartId, allowing users to explore the details of each order. Changes in order data are automatically reflected in the interface.
+
+CustomTopAppBar uses icons to navigate to home, shopping cart, and order history, connected to NavController for easy navigation.
+
+In the Navigation function, I have set up a NavHost listening to NavController, with ViewModels and a Dependency Injection container, appContainer.
+
+Under NavHost, I have composable blocks for each destination in the app. For example, Screen.ProductList.route displays the product list.
+
+For Screen.ProductScreen.route, I use composable to show details about a product using LiveData in productViewModel.
+
+For Screen.ShoppingCart.route and Screen.OrderScreen.route, I display the shopping cart and order history with ShoppingCartScreen and OrderScreen.
+
+Navigation is seamlessly handled with NavController by clicking on the icons in CustomTopAppBar.
+
+The sealed class Screen represents the destinations in the app, providing an organized and secure way to handle destinations. For example, Screen.ProductList gives the route for the product list.
